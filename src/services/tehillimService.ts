@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Participant } from "../types";
+import { Database } from "@/integrations/supabase/types";
 
 export const saveParticipant = async (participant: Omit<Participant, "id" | "timestamp">): Promise<Participant> => {
   // First, insert the participant to get their ID
