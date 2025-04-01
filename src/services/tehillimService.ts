@@ -51,3 +51,24 @@ export const getClaimedPsalms = (): number[] => {
 export const isPsalmClaimed = (psalmNumber: number): boolean => {
   return getClaimedPsalms().includes(psalmNumber);
 };
+
+/**
+ * Returns a map of psalm numbers to the number of times each psalm has been selected
+ */
+export const getPsalmSelectionCounts = (): Map<number, number> => {
+  const claimedPsalms = getClaimedPsalms();
+  const countsMap = new Map<number, number>();
+  
+  // Initialize counts for all psalms from 1-150
+  for (let i = 1; i <= 150; i++) {
+    countsMap.set(i, 0);
+  }
+  
+  // Count each claimed psalm
+  claimedPsalms.forEach(psalmNumber => {
+    const currentCount = countsMap.get(psalmNumber) || 0;
+    countsMap.set(psalmNumber, currentCount + 1);
+  });
+  
+  return countsMap;
+};

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { saveParticipant, getClaimedPsalms } from "@/services/tehillimService";
+import { Badge } from "@/components/ui/badge";
+import { saveParticipant, getClaimedPsalms, getPsalmSelectionCounts } from "@/services/tehillimService";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
@@ -15,9 +16,11 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
   const [selectedPsalms, setSelectedPsalms] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [claimedPsalms, setClaimedPsalms] = useState<number[]>([]);
+  const [psalmCounts, setPsalmCounts] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
     setClaimedPsalms(getClaimedPsalms());
+    setPsalmCounts(getPsalmSelectionCounts());
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,22 +108,31 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
             <ScrollArea className="h-60 rounded-md border border-tehillim-blue/30 p-4">
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {psalmNumbers.map((num) => {
-                  const isClaimed = claimedPsalms.includes(num) && !selectedPsalms.includes(num);
+                  const count = psalmCounts.get(num) || 0;
                   return (
                     <div key={num} className="flex items-center space-x-2">
                       <Checkbox
                         id={`psalm-${num}`}
                         checked={selectedPsalms.includes(num)}
                         onCheckedChange={() => togglePsalm(num)}
-                        disabled={isClaimed}
                         className="border-tehillim-blue/50 data-[state=checked]:bg-tehillim-blue data-[state=checked]:text-white"
                       />
-                      <Label
-                        htmlFor={`psalm-${num}`}
-                        className={`text-sm ${isClaimed ? 'text-gray-400' : ''}`}
-                      >
-                        {num}
-                      </Label>
+                      <div className="flex items-center">
+                        <Label
+                          htmlFor={`psalm-${num}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {num}
+                        </Label>
+                        {count > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-1 py-0 px-1.5 text-xs bg-tehillim-blue/10"
+                          >
+                            {count}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
