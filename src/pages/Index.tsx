@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import Introduction from "@/components/Introduction";
 import SignUpForm from "@/components/SignUpForm";
@@ -10,10 +11,24 @@ import { Participant } from "@/types";
 
 const Index = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const loadParticipants = () => {
-    const data = getAllParticipants();
-    setParticipants(data);
+  const loadParticipants = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAllParticipants();
+      setParticipants(data);
+    } catch (error) {
+      console.error("Error loading participants:", error);
+      toast({
+        title: "Error loading participants",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -27,7 +42,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 flex-grow">
         <Introduction />
         <SignUpForm onSignUp={loadParticipants} />
-        <ParticipantsList participants={participants} />
+        {isLoading ? (
+          <div className="w-full max-w-4xl mx-auto mt-8 text-center text-gray-500">
+            Loading participants...
+          </div>
+        ) : (
+          <ParticipantsList participants={participants} />
+        )}
       </main>
       
       <Footer />

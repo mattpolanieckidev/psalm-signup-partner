@@ -15,15 +15,35 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
   const [name, setName] = useState("");
   const [selectedPsalms, setSelectedPsalms] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [claimedPsalms, setClaimedPsalms] = useState<number[]>([]);
   const [psalmCounts, setPsalmCounts] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
-    setClaimedPsalms(getClaimedPsalms());
-    setPsalmCounts(getPsalmSelectionCounts());
-  }, []);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const claimed = await getClaimedPsalms();
+        const counts = await getPsalmSelectionCounts();
+        
+        setClaimedPsalms(claimed);
+        setPsalmCounts(counts);
+      } catch (error) {
+        console.error("Error loading psalm data:", error);
+        toast({
+          title: "Error loading psalm data",
+          description: "Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [toast]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim()) {
@@ -45,7 +65,7 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
     setIsSubmitting(true);
     
     try {
-      saveParticipant({
+      await saveParticipant({
         name: name.trim(),
         psalmNumbers: selectedPsalms,
       });
@@ -61,6 +81,7 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
       setSelectedPsalms([]);
       onSignUp();
     } catch (error) {
+      console.error("Error saving participant:", error);
       toast({
         title: "Something went wrong",
         description: "Please try again later.",
@@ -81,6 +102,16 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
         : [...prev, psalmNumber]
     );
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-md mx-auto mt-8 border-tehillim-blue/20">
+        <CardHeader>
+          <CardTitle className="text-center text-tehillim-blue">Loading Psalm Data...</CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto mt-8 border-tehillim-blue/20">

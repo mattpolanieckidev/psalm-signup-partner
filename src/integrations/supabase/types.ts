@@ -9,7 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      participants: {
+        Row: {
+          id: string
+          name: string
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      psalm_selections: {
+        Row: {
+          id: string
+          participant_id: string
+          psalm_number: number
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          participant_id: string
+          psalm_number: number
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          participant_id?: string
+          psalm_number?: number
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "psalm_selections_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

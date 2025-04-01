@@ -1,62 +1,110 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { Participant } from "../types";
 
-// For now, we'll use localStorage to persist data
-const STORAGE_KEY = "tehillim_participants";
-
-export const saveParticipant = (participant: Omit<Participant, "id" | "timestamp">): Participant => {
-  const participants = getAllParticipants();
+export const saveParticipant = async (participant: Omit<Participant, "id" | "timestamp">): Promise<Participant> => {
+  // First, insert the participant to get their ID
+  const { data: participantData, error: participantError } = await supabase
+    .from('participants')
+    .insert({
+      name: participant.name
+    })
+    .select()
+    .single();
   
-  const newParticipant: Participant = {
-    id: Math.random().toString(36).substr(2, 9),
-    name: participant.name,
+  if (participantError) {
+    console.error("Error saving participant:", participantError);
+    throw participantError;
+  }
+  
+  // Then, insert all psalm selections
+  const psalmSelections = participant.psalmNumbers.map(psalmNumber => ({
+    participant_id: participantData.id,
+    psalm_number: psalmNumber
+  }));
+  
+  const { error: psalmError } = await supabase
+    .from('psalm_selections')
+    .insert(psalmSelections);
+  
+  if (psalmError) {
+    console.error("Error saving psalm selections:", psalmError);
+    throw psalmError;
+  }
+  
+  return {
+    id: participantData.id,
+    name: participantData.name,
     psalmNumbers: participant.psalmNumbers,
-    timestamp: new Date().toISOString(),
+    timestamp: participantData.timestamp
   };
-  
-  participants.push(newParticipant);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(participants));
-  
-  return newParticipant;
 };
 
-export const getAllParticipants = (): Participant[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) return [];
+export const getAllParticipants = async (): Promise<Participant[]> => {
+  // First, get all participants
+  const { data: participants, error: participantsError } = await supabase
+    .from('participants')
+    .select('*')
+    .order('timestamp', { ascending: false });
   
-  try {
-    const parsedData = JSON.parse(data);
-    
-    // Migration for existing data with single psalmNumber
-    return parsedData.map((p: any) => {
-      if ('psalmNumber' in p && !('psalmNumbers' in p)) {
-        return {
-          ...p,
-          psalmNumbers: [p.psalmNumber]
-        };
-      }
-      return p;
-    });
-  } catch (error) {
-    console.error("Error parsing participants data:", error);
+  if (participantsError) {
+    console.error("Error fetching participants:", participantsError);
     return [];
   }
+
+  // Then, get all psalm selections
+  const { data: psalmSelections, error: psalmSelectionsError } = await supabase
+    .from('psalm_selections')
+    .select('*');
+  
+  if (psalmSelectionsError) {
+    console.error("Error fetching psalm selections:", psalmSelectionsError);
+    return [];
+  }
+
+  // Map selections to participants
+  return participants.map(participant => {
+    const selections = psalmSelections
+      .filter(selection => selection.participant_id === participant.id)
+      .map(selection => selection.psalm_number);
+    
+    return {
+      id: participant.id,
+      name: participant.name,
+      psalmNumbers: selections,
+      timestamp: participant.timestamp
+    };
+  });
 };
 
-export const getClaimedPsalms = (): number[] => {
-  const participants = getAllParticipants();
-  return participants.flatMap(p => p.psalmNumbers);
+export const getClaimedPsalms = async (): Promise<number[]> => {
+  const { data, error } = await supabase
+    .from('psalm_selections')
+    .select('psalm_number');
+  
+  if (error) {
+    console.error("Error fetching claimed psalms:", error);
+    return [];
+  }
+  
+  return data.map(selection => selection.psalm_number);
 };
 
-export const isPsalmClaimed = (psalmNumber: number): boolean => {
-  return getClaimedPsalms().includes(psalmNumber);
+export const isPsalmClaimed = async (psalmNumber: number): Promise<boolean> => {
+  const claimedPsalms = await getClaimedPsalms();
+  return claimedPsalms.includes(psalmNumber);
 };
 
-/**
- * Returns a map of psalm numbers to the number of times each psalm has been selected
- */
-export const getPsalmSelectionCounts = (): Map<number, number> => {
-  const claimedPsalms = getClaimedPsalms();
+export const getPsalmSelectionCounts = async (): Promise<Map<number, number>> => {
+  const { data, error } = await supabase
+    .from('psalm_selections')
+    .select('psalm_number');
+  
+  if (error) {
+    console.error("Error fetching psalm selections:", error);
+    return new Map<number, number>();
+  }
+  
   const countsMap = new Map<number, number>();
   
   // Initialize counts for all psalms from 1-150
@@ -65,9 +113,9 @@ export const getPsalmSelectionCounts = (): Map<number, number> => {
   }
   
   // Count each claimed psalm
-  claimedPsalms.forEach(psalmNumber => {
-    const currentCount = countsMap.get(psalmNumber) || 0;
-    countsMap.set(psalmNumber, currentCount + 1);
+  data.forEach(({ psalm_number }) => {
+    const currentCount = countsMap.get(psalm_number) || 0;
+    countsMap.set(psalm_number, currentCount + 1);
   });
   
   return countsMap;
