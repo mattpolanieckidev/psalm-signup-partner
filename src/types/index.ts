@@ -2,6 +2,6 @@
 export interface Participant {
   id: string;
   name: string;
-  psalmNumber: number;
+  psalmNumbers: number[];
   timestamp: string;
 }

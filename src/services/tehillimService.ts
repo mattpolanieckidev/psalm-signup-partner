@@ -10,7 +10,7 @@ export const saveParticipant = (participant: Omit<Participant, "id" | "timestamp
   const newParticipant: Participant = {
     id: Math.random().toString(36).substr(2, 9),
     name: participant.name,
-    psalmNumber: participant.psalmNumber,
+    psalmNumbers: participant.psalmNumbers,
     timestamp: new Date().toISOString(),
   };
   
@@ -22,11 +22,30 @@ export const saveParticipant = (participant: Omit<Participant, "id" | "timestamp
 
 export const getAllParticipants = (): Participant[] => {
   const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+  if (!data) return [];
+  
+  try {
+    const parsedData = JSON.parse(data);
+    
+    // Migration for existing data with single psalmNumber
+    return parsedData.map((p: any) => {
+      if ('psalmNumber' in p && !('psalmNumbers' in p)) {
+        return {
+          ...p,
+          psalmNumbers: [p.psalmNumber]
+        };
+      }
+      return p;
+    });
+  } catch (error) {
+    console.error("Error parsing participants data:", error);
+    return [];
+  }
 };
 
 export const getClaimedPsalms = (): number[] => {
-  return getAllParticipants().map(p => p.psalmNumber);
+  const participants = getAllParticipants();
+  return participants.flatMap(p => p.psalmNumbers);
 };
 
 export const isPsalmClaimed = (psalmNumber: number): boolean => {
