@@ -29,16 +29,19 @@ export type Database = {
       }
       prayer_recipients: {
         Row: {
+          hidden: boolean
           id: string
           name: string
           timestamp: string
         }
         Insert: {
+          hidden?: boolean
           id?: string
           name: string
           timestamp?: string
         }
         Update: {
+          hidden?: boolean
           id?: string
           name?: string
           timestamp?: string
