@@ -27,6 +27,24 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_recipients: {
+        Row: {
+          id: string
+          name: string
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
       psalm_selections: {
         Row: {
           id: string

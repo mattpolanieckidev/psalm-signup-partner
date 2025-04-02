@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Introduction from "@/components/Introduction";
 import SignUpForm from "@/components/SignUpForm";
 import ParticipantsList from "@/components/ParticipantsList";
+import PrayerRecipients from "@/components/PrayerRecipients";
 import Footer from "@/components/Footer";
 import { getAllParticipants } from "@/services/tehillimService";
 import { Participant } from "@/types";
@@ -41,7 +42,14 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-8 flex-grow">
         <Introduction />
-        <SignUpForm onSignUp={loadParticipants} />
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <SignUpForm onSignUp={loadParticipants} />
+          </div>
+          <div>
+            <PrayerRecipients />
+          </div>
+        </div>
         {isLoading ? (
           <div className="w-full max-w-4xl mx-auto mt-8 text-center text-gray-500">
             Loading participants...
