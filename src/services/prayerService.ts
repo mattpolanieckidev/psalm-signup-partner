@@ -20,7 +20,7 @@ export const addPrayerRecipient = async (name: string): Promise<PrayerRecipient 
     throw error;
   }
   
-  return data;
+  return data as PrayerRecipient;
 };
 
 export const getPrayerRecipients = async (): Promise<PrayerRecipient[]> => {
@@ -34,5 +34,5 @@ export const getPrayerRecipients = async (): Promise<PrayerRecipient[]> => {
     return [];
   }
   
-  return data;
+  return data as PrayerRecipient[];
 };
