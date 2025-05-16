@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Introduction from "@/components/Introduction";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (

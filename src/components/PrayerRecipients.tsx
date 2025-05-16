@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -16,9 +15,15 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 
 interface PrayerRecipientsProps {
   showShareLinks?: boolean;
+  onRecipientSelect?: (recipient: PrayerRecipient) => void;
+  selectedRecipient?: PrayerRecipient | null;
 }
 
-const PrayerRecipients = ({ showShareLinks = false }: PrayerRecipientsProps) => {
+const PrayerRecipients = ({ 
+  showShareLinks = false, 
+  onRecipientSelect, 
+  selectedRecipient 
+}: PrayerRecipientsProps) => {
   const [recipients, setRecipients] = useState<PrayerRecipient[]>([]);
   const [newName, setNewName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -153,11 +158,15 @@ const PrayerRecipients = ({ showShareLinks = false }: PrayerRecipientsProps) => 
           {isLoading ? (
             <p className="text-center text-gray-500 py-4">Loading names...</p>
           ) : recipients.length > 0 ? (
-            <ul className="space-y-2 max-h-40 overflow-y-auto p-2 border border-tehillim-blue/10 rounded-md">
+            <ul className="space-y-2 max-h-80 overflow-y-auto p-2 border border-tehillim-blue/10 rounded-md">
               {recipients.map((recipient) => (
                 <li 
                   key={recipient.id} 
-                  className={`flex justify-between items-center text-gray-700 border-b border-tehillim-blue/10 pb-1 last:border-0 ${recipient.hidden ? 'text-gray-400' : ''}`}
+                  className={`flex justify-between items-center text-gray-700 border-b border-tehillim-blue/10 pb-1 last:border-0 
+                    ${recipient.hidden ? 'text-gray-400' : ''} 
+                    ${onRecipientSelect && selectedRecipient?.id === recipient.id ? 'bg-tehillim-blue/10' : ''}
+                    ${onRecipientSelect ? 'cursor-pointer hover:bg-tehillim-blue/5' : ''}`}
+                  onClick={() => onRecipientSelect && onRecipientSelect(recipient)}
                 >
                   <span>{recipient.name}</span>
                   <div className="flex space-x-1">
@@ -169,11 +178,12 @@ const PrayerRecipients = ({ showShareLinks = false }: PrayerRecipientsProps) => 
                             size="sm"
                             className="h-6 w-6 p-0 hover:bg-gray-100"
                             title="Get shareable link"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <Link className="h-4 w-4 text-gray-400" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4">
+                        <PopoverContent className="w-auto p-4" onClick={(e) => e.stopPropagation()}>
                           <div className="space-y-2">
                             <p className="text-sm text-gray-700">Share this link with others so they can pray for {recipient.name}</p>
                             <div className="flex items-center space-x-2">
@@ -198,7 +208,10 @@ const PrayerRecipients = ({ showShareLinks = false }: PrayerRecipientsProps) => 
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleToggleVisibility(recipient.id, recipient.hidden)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleVisibility(recipient.id, recipient.hidden);
+                      }}
                       className="h-6 w-6 p-0 hover:bg-gray-100"
                       title={recipient.hidden ? "Restore" : "Hide"}
                     >
