@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 
 export interface PrayerRecipient {
   id: string;
@@ -56,4 +55,25 @@ export const toggleRecipientVisibility = async (id: string, hidden: boolean): Pr
   }
   
   return true;
+};
+
+export const getPrayerRecipientById = async (id: string): Promise<PrayerRecipient | null> => {
+  const { data, error } = await supabase
+    .from('prayer_recipients')
+    .select('*')
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error("Error fetching prayer recipient:", error);
+    return null;
+  }
+  
+  return data as PrayerRecipient;
+};
+
+export const generateShareableLink = (recipientId: string): string => {
+  // Generate a shareable link for the recipient
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/pray-for/${recipientId}`;
 };

@@ -4,10 +4,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EyeOff, Eye } from "lucide-react";
-import { PrayerRecipient, addPrayerRecipient, getPrayerRecipients, toggleRecipientVisibility } from "@/services/prayerService";
+import { EyeOff, Eye, Copy, Link } from "lucide-react";
+import { 
+  PrayerRecipient, 
+  addPrayerRecipient, 
+  getPrayerRecipients, 
+  toggleRecipientVisibility,
+  generateShareableLink
+} from "@/services/prayerService";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
-const PrayerRecipients = () => {
+interface PrayerRecipientsProps {
+  showShareLinks?: boolean;
+}
+
+const PrayerRecipients = ({ showShareLinks = false }: PrayerRecipientsProps) => {
   const [recipients, setRecipients] = useState<PrayerRecipient[]>([]);
   const [newName, setNewName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -91,10 +102,20 @@ const PrayerRecipients = () => {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Link copied",
+      description: "The shareable link has been copied to your clipboard.",
+    });
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto mt-8 border-tehillim-blue/20">
       <CardHeader>
-        <CardTitle className="text-center text-tehillim-blue">Pray For</CardTitle>
+        <CardTitle className="text-center text-tehillim-blue">
+          {showShareLinks ? "Manage Prayer Recipients" : "Pray For"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,18 +160,54 @@ const PrayerRecipients = () => {
                   className={`flex justify-between items-center text-gray-700 border-b border-tehillim-blue/10 pb-1 last:border-0 ${recipient.hidden ? 'text-gray-400' : ''}`}
                 >
                   <span>{recipient.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleVisibility(recipient.id, recipient.hidden)}
-                    className="h-6 w-6 p-0 hover:bg-gray-100"
-                    title={recipient.hidden ? "Restore" : "Hide"}
-                  >
-                    {recipient.hidden ? 
-                      <Eye className="h-4 w-4 text-gray-400" /> : 
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    }
-                  </Button>
+                  <div className="flex space-x-1">
+                    {showShareLinks && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-gray-100"
+                            title="Get shareable link"
+                          >
+                            <Link className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4">
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-700">Share this link with others so they can pray for {recipient.name}</p>
+                            <div className="flex items-center space-x-2">
+                              <Input 
+                                value={generateShareableLink(recipient.id)} 
+                                readOnly 
+                                className="text-xs"
+                              />
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => copyToClipboard(generateShareableLink(recipient.id))}
+                                className="shrink-0"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleVisibility(recipient.id, recipient.hidden)}
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
+                      title={recipient.hidden ? "Restore" : "Hide"}
+                    >
+                      {recipient.hidden ? 
+                        <Eye className="h-4 w-4 text-gray-400" /> : 
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      }
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

@@ -7,10 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { saveParticipant, getClaimedPsalms, getPsalmSelectionCounts } from "@/services/tehillimService";
+import { saveParticipantForRecipient, getClaimedPsalmsForRecipient, getPsalmSelectionCountsForRecipient } from "@/services/prayerSelectionService";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
+interface SignUpFormProps {
+  onSignUp: () => void;
+  recipientId?: string;
+  recipientName?: string;
+}
+
+const SignUpForm = ({ onSignUp, recipientId, recipientName }: SignUpFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [selectedPsalms, setSelectedPsalms] = useState<number[]>([]);
@@ -21,10 +27,15 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!recipientId) {
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
-        const claimed = await getClaimedPsalms();
-        const counts = await getPsalmSelectionCounts();
+        const claimed = await getClaimedPsalmsForRecipient(recipientId);
+        const counts = await getPsalmSelectionCountsForRecipient(recipientId);
         
         setClaimedPsalms(claimed);
         setPsalmCounts(counts);
@@ -41,7 +52,7 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
     };
     
     loadData();
-  }, [toast]);
+  }, [recipientId, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,19 +73,31 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
       return;
     }
     
+    if (!recipientId) {
+      toast({
+        title: "Missing recipient information",
+        description: "Please try again or contact the organizer.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      await saveParticipant({
-        name: name.trim(),
-        psalmNumbers: selectedPsalms,
-      });
+      await saveParticipantForRecipient(
+        {
+          name: name.trim(),
+          psalmNumbers: selectedPsalms,
+        },
+        recipientId
+      );
       
       toast({
         title: "Thank you for signing up!",
         description: `You have committed to recite ${selectedPsalms.length === 1 
           ? `Psalm ${selectedPsalms[0]}` 
-          : `Psalms ${selectedPsalms.join(', ')}`}.`,
+          : `Psalms ${selectedPsalms.join(', ')}`} for ${recipientName || "the recipient"}.`,
       });
       
       setName("");
@@ -116,7 +139,9 @@ const SignUpForm = ({ onSignUp }: { onSignUp: () => void }) => {
   return (
     <Card className="w-full max-w-md mx-auto mt-8 border-tehillim-blue/20">
       <CardHeader>
-        <CardTitle className="text-center text-tehillim-blue">Sign Up for Psalms</CardTitle>
+        <CardTitle className="text-center text-tehillim-blue">
+          {recipientName ? `Sign Up to Pray for ${recipientName}` : "Sign Up for Psalms"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
