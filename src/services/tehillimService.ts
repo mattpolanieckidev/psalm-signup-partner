@@ -21,6 +21,7 @@ export const saveParticipant = async (participant: Omit<Participant, "id" | "tim
   // Then, insert all psalm selections
   const psalmSelections = participant.psalmNumbers.map(psalmNumber => ({
     participant_id: participantData.id,
+    prayer_recipient_id: participant.prayerRecipientId,
     psalm_number: psalmNumber
   }));
   
@@ -37,11 +38,12 @@ export const saveParticipant = async (participant: Omit<Participant, "id" | "tim
     id: participantData.id,
     name: participantData.name,
     psalmNumbers: participant.psalmNumbers,
+    prayerRecipientId: participant.prayerRecipientId,
     timestamp: participantData.timestamp
   };
 };
 
-export const getAllParticipants = async (): Promise<Participant[]> => {
+export const getAllParticipants = async (prayerRecipientId?: string): Promise<Participant[]> => {
   // First, get all participants
   const { data: participants, error: participantsError } = await supabase
     .from('participants')
@@ -54,9 +56,14 @@ export const getAllParticipants = async (): Promise<Participant[]> => {
   }
 
   // Then, get all psalm selections
-  const { data: psalmSelections, error: psalmSelectionsError } = await supabase
-    .from('psalm_selections')
-    .select('*');
+  const psalmSelectionsQuery = supabase.from('psalm_selections').select('*');
+  
+  // Filter by prayer recipient if specified
+  if (prayerRecipientId) {
+    psalmSelectionsQuery.eq('prayer_recipient_id', prayerRecipientId);
+  }
+  
+  const { data: psalmSelections, error: psalmSelectionsError } = await psalmSelectionsQuery;
   
   if (psalmSelectionsError) {
     console.error("Error fetching psalm selections:", psalmSelectionsError);
@@ -69,19 +76,28 @@ export const getAllParticipants = async (): Promise<Participant[]> => {
       .filter(selection => selection.participant_id === participant.id)
       .map(selection => selection.psalm_number);
     
+    // Get the prayer recipient ID from the first psalm selection for this participant
+    const participantSelections = psalmSelections.filter(selection => selection.participant_id === participant.id);
+    const recipientId = participantSelections.length > 0 ? participantSelections[0].prayer_recipient_id : '';
+    
     return {
       id: participant.id,
       name: participant.name,
       psalmNumbers: selections,
+      prayerRecipientId: recipientId,
       timestamp: participant.timestamp
     };
   });
 };
 
-export const getClaimedPsalms = async (): Promise<number[]> => {
-  const { data, error } = await supabase
-    .from('psalm_selections')
-    .select('psalm_number');
+export const getClaimedPsalms = async (prayerRecipientId?: string): Promise<number[]> => {
+  const query = supabase.from('psalm_selections').select('psalm_number');
+  
+  if (prayerRecipientId) {
+    query.eq('prayer_recipient_id', prayerRecipientId);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
     console.error("Error fetching claimed psalms:", error);
@@ -91,15 +107,19 @@ export const getClaimedPsalms = async (): Promise<number[]> => {
   return data.map(selection => selection.psalm_number);
 };
 
-export const isPsalmClaimed = async (psalmNumber: number): Promise<boolean> => {
-  const claimedPsalms = await getClaimedPsalms();
+export const isPsalmClaimed = async (psalmNumber: number, prayerRecipientId?: string): Promise<boolean> => {
+  const claimedPsalms = await getClaimedPsalms(prayerRecipientId);
   return claimedPsalms.includes(psalmNumber);
 };
 
-export const getPsalmSelectionCounts = async (): Promise<Map<number, number>> => {
-  const { data, error } = await supabase
-    .from('psalm_selections')
-    .select('psalm_number');
+export const getPsalmSelectionCounts = async (prayerRecipientId?: string): Promise<Map<number, number>> => {
+  const query = supabase.from('psalm_selections').select('psalm_number');
+  
+  if (prayerRecipientId) {
+    query.eq('prayer_recipient_id', prayerRecipientId);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
     console.error("Error fetching psalm selections:", error);
