@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      participants: {
+        Row: {
+          id: string
+          name: string
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      prayer_recipients: {
+        Row: {
+          hidden: boolean
+          id: string
+          name: string
+          timestamp: string
+        }
+        Insert: {
+          hidden?: boolean
+          id?: string
+          name: string
+          timestamp?: string
+        }
+        Update: {
+          hidden?: boolean
+          id?: string
+          name?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      psalm_selections: {
+        Row: {
+          id: string
+          participant_id: string
+          prayer_recipient_id: string
+          psalm_number: number
+          timestamp: string
+        }
+        Insert: {
+          id?: string
+          participant_id: string
+          prayer_recipient_id: string
+          psalm_number: number
+          timestamp?: string
+        }
+        Update: {
+          id?: string
+          participant_id?: string
+          prayer_recipient_id?: string
+          psalm_number?: number
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "psalm_selections_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "psalm_selections_prayer_recipient_id_fkey"
+            columns: ["prayer_recipient_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
